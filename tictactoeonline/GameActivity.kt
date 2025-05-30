@@ -6,37 +6,43 @@ import android.view.View
 import android.widget.Toast
 import com.example.tictactoeonline.databinding.ActivityGameBinding
 
-class GameActivity : AppCompatActivity() , View.OnClickListener {
+class GameActivity : AppCompatActivity(), View.OnClickListener {
 
     private var gameModel: GameModel? = null
+    private lateinit var binding: ActivityGameBinding
 
-    lateinit var binding: ActivityGameBinding
+    // Queues to track last 3 moves for each player
+    private val xQueue = ArrayDeque<Int>(3)
+    private val oQueue = ArrayDeque<Int>(3)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.btn1.setOnClickListener(this,)
-        binding.btn2.setOnClickListener(this,)
-        binding.btn3.setOnClickListener(this,)
-        binding.btn4.setOnClickListener(this,)
-        binding.btn5.setOnClickListener(this,)
-        binding.btn6.setOnClickListener(this,)
-        binding.btn7.setOnClickListener(this,)
-        binding.btn8.setOnClickListener(this,)
-        binding.btn9.setOnClickListener(this,)
+        // Set onClickListeners for the 9 game buttons
+        binding.btn1.setOnClickListener(this)
+        binding.btn2.setOnClickListener(this)
+        binding.btn3.setOnClickListener(this)
+        binding.btn4.setOnClickListener(this)
+        binding.btn5.setOnClickListener(this)
+        binding.btn6.setOnClickListener(this)
+        binding.btn7.setOnClickListener(this)
+        binding.btn8.setOnClickListener(this)
+        binding.btn9.setOnClickListener(this)
 
         binding.startGameBtn.setOnClickListener {
             startGame()
         }
+
+        // Observe game data changes
         GameData.gameModel.observe(this) {
             gameModel = it
             set_UI()
         }
     }
 
-    fun set_UI() {
+    private fun set_UI() {
         gameModel?.apply {
             binding.btn1.text = filledPos[0]
             binding.btn2.text = filledPos[1]
@@ -47,8 +53,6 @@ class GameActivity : AppCompatActivity() , View.OnClickListener {
             binding.btn7.text = filledPos[6]
             binding.btn8.text = filledPos[7]
             binding.btn9.text = filledPos[8]
-
-
 
             binding.startGameBtn.visibility = View.VISIBLE
 
@@ -82,27 +86,24 @@ class GameActivity : AppCompatActivity() , View.OnClickListener {
                     }
                 }
             }
-
-
         }
     }
 
-    fun startGame() {
+    private fun startGame() {
         gameModel?.let {
             it.filledPos = MutableList(9) { "" }
             it.gameStatus = GameStatus.INPROGRESS
+            xQueue.clear()
+            oQueue.clear()
             updateGameData(it)
         }
-
     }
 
-
-    fun updateGameData(model: GameModel) {
+    private fun updateGameData(model: GameModel) {
         GameData.saveGameModel(model)
     }
 
-    fun Check_win() {
-
+    private fun Check_win() {
         val WinningPos = arrayOf(
             intArrayOf(0, 1, 2),
             intArrayOf(3, 4, 5),
@@ -111,26 +112,25 @@ class GameActivity : AppCompatActivity() , View.OnClickListener {
             intArrayOf(1, 4, 7),
             intArrayOf(2, 5, 8),
             intArrayOf(0, 4, 8),
-            intArrayOf(2, 4, 6),
+            intArrayOf(2, 4, 6)
+        )
 
-            )
         gameModel?.apply {
             winner = "draw"
             for (i in WinningPos) {
-                if ((filledPos[i[0]] == filledPos[i[1]]) && (filledPos[i[0]] == filledPos[i[2]]) && filledPos[i[0]].isNotEmpty()) {
+                if ((filledPos[i[0]] == filledPos[i[1]]) &&
+                    (filledPos[i[0]] == filledPos[i[2]]) &&
+                    filledPos[i[0]].isNotEmpty()
+                ) {
                     gameStatus = GameStatus.FINISHED
                     winner = filledPos[i[0]]
-
                 }
-
             }
+
             if (filledPos.none { it.isEmpty() }) {
                 gameStatus = GameStatus.FINISHED
             }
-
         }
-
-
     }
 
     override fun onClick(v: View?) {
@@ -141,60 +141,33 @@ class GameActivity : AppCompatActivity() , View.OnClickListener {
             }
 
             val clicked = v?.tag?.toString()?.toIntOrNull() ?: return
+            if (clicked !in filledPos.indices) return
+            if (filledPos[clicked].isNotEmpty()) return
 
-            if (clicked !in filledPos.indices) {
-                return
+            val queue = if (currentTurn == "X") xQueue else oQueue
+
+            // Remove oldest if queue is full
+            if (queue.size >= 3) {
+                val indexToRemove = queue.removeFirst()
+                filledPos[indexToRemove] = ""
             }
 
-            if (filledPos[clicked].isEmpty()) {
+            // Add new move
+            queue.addLast(clicked)
+            filledPos[clicked] = currentTurn
 
-                val countX = filledPos.count { it == "X" }
-                val countO = filledPos.count { it == "O" }
+            // Switch turn
+            currentTurn = if (currentTurn == "X") "O" else "X"
 
-                // Check if the current player exceeds the maximum allowed markers
-                if ((currentTurn == "X" && countX >= 3) || (currentTurn == "O" && countO >= 3)) {
+            // Check for win
+            Check_win()
 
-                    var oldestTimestamp = Long.MAX_VALUE
-                    var oldestIndex = -1
-
-                    // Find the oldest marker of the current player's type
-                    for (i in filledPos.indices) {
-                        if (filledPos[i] == currentTurn) {
-                            val markerTimestamp = getMarkerTimestamp(filledPos[i])
-                            if (markerTimestamp < oldestTimestamp) {
-                                oldestTimestamp = markerTimestamp
-                                oldestIndex = i
-                            }
-                        }
-                    }
-
-                    // Replace the oldest marker with the new one
-                    if (oldestIndex != -1) {
-                        filledPos[oldestIndex] = ""
-                    }
-                }
-
-                // Place the new marker
-                filledPos[clicked] = currentTurn
-                currentTurn = if (currentTurn == "X") "O" else "X"
-
-                // Check for win condition
-                Check_win()
-
-                // Update game data
-                updateGameData(this)
-            }
+            // Update UI and game data
+            updateGameData(this)
         }
     }
-
-
 }
 
-
-    private fun getMarkerTimestamp(marker: String): Long {
-
-        return System.currentTimeMillis()
-    }
 
 
 

@@ -1,13 +1,27 @@
-# XO-modern
+# XO-Modern 🎮  
+*A Modern Spin on the Classic Tic-Tac-Toe Game for Android*
 
-Modern Version of Tic-Tac-Toe Game built on Android Studio
+## 📱 Overview
 
-## Features
+XO-Modern is a reimagined version of the classic Tic-Tac-Toe game, built using Android Studio. It introduces a unique gameplay mechanic that keeps matches fast-paced and engaging — no more draws!
 
-- Play against another player on the same device.
-- Reset the game anytime to start over.
-- Basic win detection logic implemented.
-- Key Feature: There is no draw, everytime the fourth marker is marked the respective older marker is removed.
+## ✨ Features
 
-## This project is still under development
+- 🔁 Two-player mode on the same device  
+- 🧼 Instant reset button to start a new game  
+- 🧠 Basic win detection logic  
+- ♻️ **Dynamic Gameplay Mechanic**:  
+  After the fourth move, the oldest marker is automatically removed — keeping the game in constant motion and eliminating the possibility of a draw!
 
+## 🚧 In Progress
+
+- ☁️ Firebase integration for:
+  - Online multiplayer mode  
+  - Player profile management  
+  - Game statistics and history
+
+## 🔧 Tech Stack
+
+- Kotlin (Android Studio)
+- XML
+- Google Firebase (under development)
